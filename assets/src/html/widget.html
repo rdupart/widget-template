@@ -1,30 +1,121 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <!-- Metadata -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Page Title</title>
-
-  <!-- Google Fonts -->
+  <title>Variable Potion Lab</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,400;0,600;1,400;1,600&display=swap"
-    rel="stylesheet">
-
-  <!-- CSS -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/widget-page.css">
+  <style>
+    .potion-widget { margin-top: 1.5rem; padding: 1.5rem; border-radius: 1rem; background: var(--neutral-10); border: 0.2em solid var(--neutral-40); display: flex; flex-direction: column; gap: 1rem; }
+    .potion-bottle-container { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
+    .potion-bottle { width: 80px; height: 120px; border: 0.2em solid var(--neutral-300); border-radius: 0 0 1rem 1rem; position: relative; background: var(--neutral-50); overflow: hidden; }
+    .potion-fill { position: absolute; bottom: 0; width: 100%; height: 0%; transition: height 0.4s ease, background 0.4s ease; border-radius: 0 0 0.8rem 0.8rem; }
+    .potion-value { font-size: 2.5rem; font-weight: 600; text-align: center; color: var(--primary-100); background: white; border-radius: 0.75rem; padding: 0.75rem; border: 0.15em dashed var(--primary-60); transition: transform 0.2s ease; }
+    .potion-value.animate { animation: pulse 0.4s ease; }
+    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+    .potion-controls { display: flex; flex-direction: column; gap: 0.75rem; }
+    .slider-container { display: flex; align-items: center; gap: 0.5rem; }
+    .potion-slider { flex: 1; accent-color: var(--primary-80); }
+    .slider-preview { font-weight: 600; color: var(--primary-100); min-width: 2rem; text-align: center; }
+    .potion-buttons { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .potion-buttons button { flex: 1; min-width: 8rem; }
+    .potion-message { text-align: center; font-weight: 600; color: var(--neutral-120); min-height: 1.5rem; }
+  </style>
 </head>
-
 <body>
+  <div class="column column-md">
+    <section>
+      <div class="text">
+        <p><strong>Welcome to the Variable Potion Lab!</strong> A variable is like a labeled bottle that holds a number. You can pour in a value, pour some out, or swap it for something new.</p>
+        <p>Let's practice storing and changing the amount of Glow Juice in our bottle.</p>
+      </div>
+      <button class="button-semantic button-primary button-continue">
+        <span class="button-text">Start Mixing</span>
+        <svg class="button-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M16 8L14.59 6.59L9 12.17V0H7V12.17L1.42 6.58L0 8L8 16L16 8Z" fill="white" />
+        </svg>
+      </button>
+    </section>
+    <section style="display:none;">
+      <div class="text">
+        <h2>Glow Juice Tracker</h2>
+        <p>Move the slider to choose a new amount, then click <em>Store It</em> to pour that value into the bottle (our variable). Use <em>Add 1</em> or <em>Pour Out 1</em> to change the stored amount.</p>
+      </div>
+      <div class="widget potion-widget variable-potion-widget">
+        <div class="potion-bottle-container">
+          <div class="potion-bottle"><div class="potion-fill" data-fill></div></div>
+          <div class="potion-value" aria-live="polite" data-value>0</div>
+        </div>
+        <div class="potion-message" data-message>Choose a value to store.</div>
+        <div class="potion-controls">
+          <label>Pick a Glow Juice amount:
+            <div class="slider-container">
+              <input class="potion-slider" type="range" min="0" max="12" value="6" data-slider>
+              <span class="slider-preview" data-preview>6</span>
+            </div>
+          </label>
+          <div class="potion-buttons">
+            <button class="button-semantic button-primary" data-store>Store It</button>
+            <button class="button-semantic button-secondary" data-add>Add 1</button>
+            <button class="button-semantic button-tertiary" data-pour>Pour Out 1</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
   <script type="module">
     import { WidgetPage } from "../js/WidgetPage.js";
-
+    import { Widget } from "../js/Widget.js";
+    class VariablePotionWidget extends Widget {
+      constructor(container, page) {
+        super(container, page);
+        this.value = 0;
+        this.maxValue = 12;
+        this.valueEl = container.querySelector("[data-value]");
+        this.fillEl = container.querySelector("[data-fill]");
+        this.slider = container.querySelector("[data-slider]");
+        this.previewEl = container.querySelector("[data-preview]");
+        this.message = container.querySelector("[data-message]");
+        this.slider.addEventListener("input", () => this.previewEl.textContent = this.slider.value);
+        container.querySelector("[data-store]").addEventListener("click", () => this.storeValue(Number(this.slider.value)));
+        container.querySelector("[data-add]").addEventListener("click", () => this.storeValue(this.value + 1));
+        container.querySelector("[data-pour]").addEventListener("click", () => this.storeValue(this.value - 1));
+        this.updateVisuals();
+      }
+      getColor(value) {
+        const r = value / this.maxValue;
+        return r < 0.33 ? "hsl(220, 80%, 65%)" : r < 0.66 ? "hsl(280, 80%, 65%)" : "hsl(320, 90%, 60%)";
+      }
+      updateVisuals() {
+        const fillPercent = (this.value / this.maxValue) * 100;
+        this.fillEl.style.height = `${fillPercent}%`;
+        this.fillEl.style.background = this.getColor(this.value);
+        this.valueEl.textContent = this.value;
+        this.valueEl.style.color = this.getColor(this.value);
+      }
+      storeValue(newValue) {
+        this.page.playActionSound();
+        this.value = Math.max(0, Math.min(this.maxValue, newValue));
+        this.valueEl.classList.add("animate");
+        setTimeout(() => this.valueEl.classList.remove("animate"), 400);
+        this.updateVisuals();
+        if (this.value === this.maxValue) {
+          this.message.textContent = "Full bottle! Great storing skills!";
+          this.page.celebrate();
+        } else if (this.value === 0) {
+          this.message.textContent = "Bottle is empty. Add some Glow Juice!";
+        } else {
+          this.message.textContent = `Glow Juice is now ${this.value}.`;
+        }
+      }
+    }
     document.addEventListener("DOMContentLoaded", () => {
-      const widgetPage = new WidgetPage("widget-page-template", document.body);
+      const widgetPage = new WidgetPage("variable-potion-lab", document.body);
+      widgetPage.registerWidget(".variable-potion-widget", VariablePotionWidget);
     });
   </script>
 </body>
-
 </html>
